@@ -30,6 +30,42 @@ app.get('/images', (c) => {
   return c.json(files)
 })
 
+const CONTENT_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.tiff': 'image/tiff',
+  '.heic': 'image/heic',
+  '.webp': 'image/webp',
+}
+
+app.get('/images/:folder/:filename', (c) => {
+  const folder = decodeURIComponent(c.req.param('folder'))
+  const filename = decodeURIComponent(c.req.param('filename'))
+  const subPath = `${folder}/${filename}`
+
+  const resolvedPath = path.resolve(IMAGES_DIR, subPath)
+  const isWithinImages =
+    resolvedPath === IMAGES_DIR ||
+    resolvedPath.startsWith(IMAGES_DIR + path.sep)
+  if (!isWithinImages) {
+    return c.text('Bad request', 400)
+  }
+
+  const ext = path.extname(filename).toLowerCase()
+  if (!IMAGE_EXTENSIONS.has(ext)) {
+    return c.text('Not found', 404)
+  }
+
+  if (!fs.existsSync(resolvedPath)) {
+    return c.text('Not found', 404)
+  }
+
+  const file = fs.readFileSync(resolvedPath)
+  return c.body(file, 200, { 'Content-Type': CONTENT_TYPES[ext] })
+})
+
 function startServer(port: number) {
   const server = serve({ fetch: app.fetch, port }, () => {
     console.log(`Server running on http://localhost:${port}`)
