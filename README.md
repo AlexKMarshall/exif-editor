@@ -37,7 +37,8 @@ Starts on port 3000 (automatically increments if in use).
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/images` | Returns a flat JSON array of image filenames found one level deep inside `images/` |
+| GET | `/images` | Returns a JSON array of URL paths (e.g. `["/images/album/photo.jpg"]`) for all images found inside `images/` |
+| GET | `/images/:folder/:filename` | Serves the image file at the given path inside `images/`. Returns 404 for unknown extensions or missing files, 400 for path traversal attempts. |
 
 ## Image library
 
