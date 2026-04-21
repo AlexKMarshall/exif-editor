@@ -22,7 +22,7 @@ app.get('/images', (c) => {
       if (!entry.isFile()) continue
       const ext = path.extname(entry.name).toLowerCase()
       if (IMAGE_EXTENSIONS.has(ext)) {
-        files.push(entry.name)
+        files.push(`/images/${album.name}/${entry.name}`)
       }
     }
   }
