@@ -41,15 +41,16 @@ const CONTENT_TYPES: Record<string, string> = {
 }
 
 app.get('/images/:folder/:filename', (c) => {
-  const folder = decodeURIComponent(c.req.param('folder'))
-  const filename = decodeURIComponent(c.req.param('filename'))
+  const folder = c.req.param('folder')
+  const filename = c.req.param('filename')
   const subPath = `${folder}/${filename}`
 
+  // Defense-in-depth: Hono's URL normalization already collapses ".." path
+  // segments before routing, so this guard cannot be triggered via a normal
+  // HTTP request with the fixed two-level route. It remains as a safeguard
+  // against future refactors or unexpected runtime behavior.
   const resolvedPath = path.resolve(IMAGES_DIR, subPath)
-  const isWithinImages =
-    resolvedPath === IMAGES_DIR ||
-    resolvedPath.startsWith(IMAGES_DIR + path.sep)
-  if (!isWithinImages) {
+  if (!resolvedPath.startsWith(IMAGES_DIR + path.sep)) {
     return c.text('Bad request', 400)
   }
 
