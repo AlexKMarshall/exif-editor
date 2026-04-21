@@ -18,28 +18,24 @@ const CONTENT_TYPES: Record<string, string> = {
 
 export const app = new Hono()
 
-app.get('/images', (c) => {
-  const albums = fs.readdirSync(IMAGES_DIR, { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
+app.get('/images', async (c) => {
+  const albumEntries = await fs.promises.readdir(IMAGES_DIR, { withFileTypes: true })
+  const albums = albumEntries.filter(entry => entry.isDirectory())
 
-  const files: string[] = []
+  const albumFiles = await Promise.all(
+    albums.map(async (album) => {
+      const albumPath = path.join(IMAGES_DIR, album.name)
+      const entries = await fs.promises.readdir(albumPath, { withFileTypes: true })
+      return entries
+        .filter(entry => entry.isFile() && IMAGE_EXTENSIONS.has(path.extname(entry.name).toLowerCase()))
+        .map(entry => `/images/${album.name}/${entry.name}`)
+    })
+  )
 
-  for (const album of albums) {
-    const albumPath = path.join(IMAGES_DIR, album.name)
-    const entries = fs.readdirSync(albumPath, { withFileTypes: true })
-    for (const entry of entries) {
-      if (!entry.isFile()) continue
-      const ext = path.extname(entry.name).toLowerCase()
-      if (IMAGE_EXTENSIONS.has(ext)) {
-        files.push(`/images/${album.name}/${entry.name}`)
-      }
-    }
-  }
-
-  return c.json(files)
+  return c.json(albumFiles.flat())
 })
 
-app.get('/images/:folder/:filename', (c) => {
+app.get('/images/:folder/:filename', async (c) => {
   const folder = c.req.param('folder')
   const filename = c.req.param('filename')
   const subPath = `${folder}/${filename}`
@@ -58,10 +54,12 @@ app.get('/images/:folder/:filename', (c) => {
     return c.text('Not found', 404)
   }
 
-  if (!fs.existsSync(resolvedPath)) {
+  try {
+    await fs.promises.access(resolvedPath)
+  } catch {
     return c.text('Not found', 404)
   }
 
-  const file = fs.readFileSync(resolvedPath)
+  const file = await fs.promises.readFile(resolvedPath)
   return c.body(file, 200, { 'Content-Type': CONTENT_TYPES[ext] })
 })
