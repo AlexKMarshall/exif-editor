@@ -7,7 +7,7 @@ const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.tiff', '.he
 
 const IMAGES_DIR = path.resolve(process.cwd(), '../images')
 
-const app = new Hono()
+export const app = new Hono()
 
 app.get('/images', (c) => {
   const albums = fs.readdirSync(IMAGES_DIR, { withFileTypes: true })
@@ -45,4 +45,6 @@ function startServer(port: number) {
   })
 }
 
-startServer(3000)
+if (process.env.NODE_ENV !== 'test') {
+  startServer(3000)
+}
